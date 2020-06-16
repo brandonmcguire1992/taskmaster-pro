@@ -7,13 +7,14 @@ var createTask = function(taskText, taskDate, taskList) {
 	var taskP = $('<p>').addClass('m-1').text(taskText);
 
 	// append span and p element to parent li
-  taskLi.append(taskSpan, taskP);
-  
-  //check due date
+	taskLi.append(taskSpan, taskP);
+
+  // check due date
   auditTask(taskLi);
 
 	// append to ul list on the page
-	$('#list-' + taskList).append(taskLi);
+  $('#list-' + taskList).append(taskLi);
+  
 };
 
 var loadTasks = function() {
@@ -101,10 +102,12 @@ $('.list-group').on('click', 'span', function() {
   // swap out elements
   $(this).replaceWith(dateInput);
 
+  // enable jQuery UI datepicker
   dateInput.datepicker({
-    minDate: 1
+    minDate: 1,
     onClose: function() {
-      $(this).trigger("change");
+      // when calendar is closed, force a 'change' event on the 'dateInput'
+      $(this).trigger('change');
     }
   })
 
@@ -141,6 +144,9 @@ $('.list-group').on('change', 'input[type="text"]', function() {
 
   // replace input with span element
   $(this).replaceWith(taskSpan);
+
+  // pass task's <li> element into auditTask() to check new due date
+  auditTask($(taskSpan).closest('.list-group-item'));
 })
 
 // modal was triggered
@@ -156,7 +162,7 @@ $('#task-form-modal').on('shown.bs.modal', function() {
 });
 
 // save button in modal was clicked
-$('#task-form-modal .btn-primary').click(function() {
+$('#task-form-modal .btn-save').click(function() {
 	// get form values
 	var taskText = $('#modalTaskDescription').val();
 	var taskDate = $('#modalDueDate').val();
@@ -196,10 +202,18 @@ $('.card .list-group').sortable({
   tolerance: 'pointer',
   helper: 'clone',
   activate: function(event) {
+    $(this).addClass('dropover');
+    $('.bottom-trash').addClass('bottom-trash-drag');
   },
   deactivate: function(event) {
+    $(this).removeClass('dropover');
+    $('.bottom-trash').removeClass('bottom-trash-drag');
   }, 
   over: function(event) {
+    $(event.target).addClass('dropover-active');
+  },
+  out: function(event) {
+    $(this).removeClass('dropover-active');
   },
   // fired when contents have been re-ordered within a list, when an item is removed from a list, or when an item is added to a list.  so moving from one column to the other will fire the update method on both moved from and moved to columns
   update: function(event) {
@@ -244,20 +258,44 @@ $('#trash').droppable({
     ui.draggable.remove();
   },
   over: function(event, ui) {
-    console.log('over');
+    $('.bottom-trash').addClass('bottom-trash-active');
   },
   out: function(event, ui) {
-    console.log('out');
+    $('.bottom-trash').removeClass('bottom-trash-active');
   }
 })
 
-$("#modalDueDate").datepicker({
+// DATE PICKER
+$('#modalDueDate').datepicker({
   minDate: 1
 });
 
+// DUE DATE INDICATIONS
 var auditTask = function(taskEl) {
+  // get date from task element
+  var date = $(taskEl).find('span').text().trim();
+
+
+  // convert to moment object at 5:00pm
+  var time = moment(date, 'L').set('hour', 17);
+
+  // clear any previously applied time classes from the element
+  $(taskEl).removeClass('list-group-item-warning list-group-item-danger');
+
+  // apply new task if task is near/over due date
+  if(moment().isAfter(time)) {
+    $(taskEl).addClass('list-group-item-danger');
+  } else if (Math.abs(moment().diff(time, 'days')) <= 2) {
+    $(taskEl).addClass('list-group-item-warning');
+  }
   console.log(taskEl);
 };
+
+setInterval(function() {
+  $('.card .list-group-item').each(function(el) {
+    auditTask(el);
+  });
+}, (1000 * 60) * 30);
 
 
 // load tasks for the first time
