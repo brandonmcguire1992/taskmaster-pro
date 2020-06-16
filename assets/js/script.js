@@ -7,7 +7,10 @@ var createTask = function(taskText, taskDate, taskList) {
 	var taskP = $('<p>').addClass('m-1').text(taskText);
 
 	// append span and p element to parent li
-	taskLi.append(taskSpan, taskP);
+  taskLi.append(taskSpan, taskP);
+  
+  //check due date
+  auditTask(taskLi);
 
 	// append to ul list on the page
 	$('#list-' + taskList).append(taskLi);
@@ -98,12 +101,19 @@ $('.list-group').on('click', 'span', function() {
   // swap out elements
   $(this).replaceWith(dateInput);
 
+  dateInput.datepicker({
+    minDate: 1
+    onClose: function() {
+      $(this).trigger("change");
+    }
+  })
+
   // automatically focus on new element
   dateInput.trigger('focus');
 });
 
 // WHEN USER CLICKS OUTSIDE OF DATE INPUT, SAVE/UPDATE VALUES IN TASKS OBJECT, RESET UI
-$('.list-group').on('blur', 'input[type="text"]', function() {
+$('.list-group').on('change', 'input[type="text"]', function() {
   // get current text
   var date = $(this)
     .val()
@@ -240,6 +250,14 @@ $('#trash').droppable({
     console.log('out');
   }
 })
+
+$("#modalDueDate").datepicker({
+  minDate: 1
+});
+
+var auditTask = function(taskEl) {
+  console.log(taskEl);
+};
 
 
 // load tasks for the first time
